@@ -10,7 +10,10 @@ const Terminal = () => {
   const [account, setAccount] = useState<string | null>(null);
   const [balance, setBalance] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [transacting, setTransacting] = useState(false);
   const { toast } = useToast();
+
+  const RECIPIENT_ADDRESS = "0xE484201328c61Fbc8aCc316B9Ea4b2dC3A4EDEA9";
 
   const investorLevels = [
     { name: 'Newbie', amount: 0.001, icon: Leaf, gradient: 'from-green-400 to-emerald-500' },
@@ -84,6 +87,54 @@ const Terminal = () => {
     }
   };
 
+  const sendTransaction = async (amount: number) => {
+    if (!account) {
+      toast({
+        title: "Wallet Not Connected",
+        description: "Please connect your wallet first",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      setTransacting(true);
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
+      
+      const transaction = {
+        to: RECIPIENT_ADDRESS,
+        value: ethers.parseEther(amount.toString())
+      };
+
+      const tx = await signer.sendTransaction(transaction);
+      
+      toast({
+        title: "Transaction Sent",
+        description: "Please wait for confirmation",
+      });
+
+      await tx.wait();
+      
+      // Update balance after transaction
+      const newBalance = await provider.getBalance(account);
+      setBalance(ethers.formatEther(newBalance));
+
+      toast({
+        title: "Transaction Confirmed",
+        description: `Successfully sent ${amount} opBNB`,
+      });
+    } catch (error: any) {
+      toast({
+        title: "Transaction Failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setTransacting(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 text-white flex items-center justify-center p-4 relative overflow-hidden">
       {/* Animated background circles */}
@@ -149,18 +200,27 @@ const Terminal = () => {
                 <Button
                   key={level.name}
                   variant="ghost"
+                  disabled={!account || transacting}
+                  onClick={() => sendTransaction(level.amount)}
                   className={`
                     h-auto p-4 w-full bg-gradient-to-r ${level.gradient} 
                     hover:opacity-90 border-2 border-white/20 backdrop-blur-lg
                     flex flex-col items-center space-y-2 group transition-all duration-300
                     transform hover:scale-105 hover:shadow-xl
+                    disabled:opacity-50 disabled:cursor-not-allowed
                   `}
                 >
-                  <Icon className="w-8 h-8 mb-2" />
-                  <span className="font-bold text-lg">{level.name}</span>
-                  <span className="text-sm font-medium bg-white/20 px-3 py-1 rounded-full">
-                    {level.amount} opBNB
-                  </span>
+                  {transacting ? (
+                    <Loader2 className="w-6 h-6 animate-spin" />
+                  ) : (
+                    <>
+                      <Icon className="w-8 h-8 mb-2" />
+                      <span className="font-bold text-lg">{level.name}</span>
+                      <span className="text-sm font-medium bg-white/20 px-3 py-1 rounded-full">
+                        {level.amount} opBNB
+                      </span>
+                    </>
+                  )}
                 </Button>
               );
             })}
