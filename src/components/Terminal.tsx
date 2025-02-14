@@ -88,8 +88,11 @@ const Terminal = () => {
       <Card className="w-full max-w-md bg-white/10 backdrop-blur-xl border border-white/20 p-8 rounded-xl shadow-2xl relative z-10">
         <div className="space-y-6">
           <div className="text-center space-y-2">
+            <h1 className="text-4xl font-extrabold tracking-tight bg-gradient-to-r from-white via-blue-100 to-white bg-clip-text text-transparent mb-2">
+              itradeBNB
+            </h1>
             <div className="text-xs uppercase tracking-wider text-white/70">Terminal Status</div>
-            <h2 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-white via-blue-100 to-white bg-clip-text text-transparent">
+            <h2 className="text-2xl font-bold tracking-tight bg-gradient-to-r from-white via-blue-100 to-white bg-clip-text text-transparent">
               SafePal Connection
             </h2>
           </div>
