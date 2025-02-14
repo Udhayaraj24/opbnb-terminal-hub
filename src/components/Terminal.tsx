@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { ethers } from 'ethers';
 import { useToast } from '@/components/ui/use-toast';
 import { Button } from '@/components/ui/button';
@@ -77,12 +77,21 @@ const Terminal = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-zinc-900 to-black text-white flex items-center justify-center p-4">
-      <Card className="w-full max-w-md bg-zinc-900/50 backdrop-blur-xl border border-zinc-800 p-8 rounded-xl shadow-2xl">
+    <div className="min-h-screen bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 text-white flex items-center justify-center p-4 relative overflow-hidden">
+      {/* Animated background circles */}
+      <div className="absolute inset-0 overflow-hidden">
+        <div className="absolute -top-40 -left-40 w-80 h-80 bg-blue-500 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob"></div>
+        <div className="absolute -bottom-40 -right-40 w-80 h-80 bg-purple-500 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-2000"></div>
+        <div className="absolute top-40 right-40 w-80 h-80 bg-pink-500 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-4000"></div>
+      </div>
+
+      <Card className="w-full max-w-md bg-white/10 backdrop-blur-xl border border-white/20 p-8 rounded-xl shadow-2xl relative z-10">
         <div className="space-y-6">
           <div className="text-center space-y-2">
-            <div className="text-xs uppercase tracking-wider text-zinc-500">Terminal Status</div>
-            <h2 className="text-2xl font-semibold tracking-tight">SafePal Connection</h2>
+            <div className="text-xs uppercase tracking-wider text-white/70">Terminal Status</div>
+            <h2 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-white via-blue-100 to-white bg-clip-text text-transparent">
+              SafePal Connection
+            </h2>
           </div>
           
           <div className="space-y-4">
@@ -90,7 +99,7 @@ const Terminal = () => {
               <Button 
                 onClick={connectWallet} 
                 disabled={loading}
-                className="w-full bg-gradient-to-r from-zinc-800 to-zinc-900 hover:from-zinc-700 hover:to-zinc-800 border border-zinc-700 transition-all duration-300"
+                className="w-full bg-gradient-to-r from-blue-400 to-purple-500 hover:from-blue-500 hover:to-purple-600 text-white border-none transition-all duration-300 transform hover:scale-105"
               >
                 {loading ? (
                   <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Connecting...</>
@@ -100,15 +109,17 @@ const Terminal = () => {
               </Button>
             ) : (
               <div className="space-y-4">
-                <div className="p-4 rounded-lg bg-zinc-800/50 border border-zinc-700">
-                  <div className="text-xs text-zinc-500 mb-1">Connected Account</div>
-                  <div className="font-mono text-sm break-all">{account}</div>
+                <div className="p-4 rounded-lg bg-white/10 backdrop-blur border border-white/20 transition-all duration-300 hover:bg-white/20">
+                  <div className="text-xs text-white/70 mb-1">Connected Account</div>
+                  <div className="font-mono text-sm break-all text-white">{account}</div>
                 </div>
                 
                 {balance && (
-                  <div className="p-4 rounded-lg bg-zinc-800/50 border border-zinc-700">
-                    <div className="text-xs text-zinc-500 mb-1">opBNB Balance</div>
-                    <div className="text-xl font-semibold">{parseFloat(balance).toFixed(4)} BNB</div>
+                  <div className="p-4 rounded-lg bg-white/10 backdrop-blur border border-white/20 transition-all duration-300 hover:bg-white/20">
+                    <div className="text-xs text-white/70 mb-1">opBNB Balance</div>
+                    <div className="text-2xl font-bold bg-gradient-to-r from-white via-blue-100 to-white bg-clip-text text-transparent">
+                      {parseFloat(balance).toFixed(4)} BNB
+                    </div>
                   </div>
                 )}
               </div>
