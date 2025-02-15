@@ -4,9 +4,18 @@ import { ethers } from 'ethers';
 import { useToast } from '@/components/ui/use-toast';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Loader2, Leaf, ArrowUp, Users } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import Packages from './Packages';
+import ReferralTree from './ReferralTree';
+
+interface ReferralNode {
+  user_id: string;
+  referrer_id: string | null;
+  level: number;
+  package_id: number;
+  referral_code: string;
+}
 
 const Terminal = () => {
   const [account, setAccount] = useState<string | null>(null);
@@ -14,9 +23,34 @@ const Terminal = () => {
   const [loading, setLoading] = useState(false);
   const [transacting, setTransacting] = useState(false);
   const [referralCode, setReferralCode] = useState<string | null>(null);
+  const [referralTree, setReferralTree] = useState<ReferralNode[] | null>(null);
+  const [treeLoading, setTreeLoading] = useState(false);
   const { toast } = useToast();
 
   const RECIPIENT_ADDRESS = "0xE484201328c61Fbc8aCc316B9Ea4b2dC3A4EDEA9";
+
+  const fetchReferralTree = async () => {
+    if (!account) return;
+    
+    try {
+      setTreeLoading(true);
+      const { data, error } = await supabase
+        .rpc('get_referral_tree', {
+          user_uuid: account
+        });
+
+      if (error) throw error;
+      setReferralTree(data);
+    } catch (error: any) {
+      toast({
+        title: "Error Loading Referral Tree",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setTreeLoading(false);
+    }
+  };
 
   useEffect(() => {
     const getReferralCode = async () => {
@@ -34,6 +68,7 @@ const Terminal = () => {
     };
 
     getReferralCode();
+    fetchReferralTree();
   }, [account]);
 
   const connectWallet = async () => {
@@ -231,9 +266,17 @@ const Terminal = () => {
         </Card>
 
         {account && (
-          <div className="space-y-4">
-            <h3 className="text-2xl font-bold text-center text-white">Available Packages</h3>
-            <Packages onSelect={handlePackageSelect} isLoading={transacting} />
+          <div className="space-y-6">
+            <div className="grid gap-6 md:grid-cols-2">
+              <div className="space-y-4">
+                <h3 className="text-2xl font-bold text-center text-white">Available Packages</h3>
+                <Packages onSelect={handlePackageSelect} isLoading={transacting} />
+              </div>
+              <div className="space-y-4">
+                <h3 className="text-2xl font-bold text-center text-white">Network Overview</h3>
+                <ReferralTree data={referralTree} isLoading={treeLoading} />
+              </div>
+            </div>
           </div>
         )}
       </div>
