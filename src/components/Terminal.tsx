@@ -7,7 +7,6 @@ import { Loader2, Copy, Check } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import Packages from './Packages';
 import ReferralTree from './ReferralTree';
-
 interface ReferralNode {
   user_id: string;
   referrer_id: string | null;
@@ -15,7 +14,6 @@ interface ReferralNode {
   package_id: number;
   referral_code: string;
 }
-
 const Terminal = () => {
   const [account, setAccount] = useState<string | null>(null);
   const [balance, setBalance] = useState<string | null>(null);
@@ -25,68 +23,59 @@ const Terminal = () => {
   const [referralTree, setReferralTree] = useState<ReferralNode[] | null>(null);
   const [treeLoading, setTreeLoading] = useState(false);
   const [copied, setCopied] = useState(false);
-  const { toast } = useToast();
-
+  const {
+    toast
+  } = useToast();
   const RECIPIENT_ADDRESS = "0xE484201328c61Fbc8aCc316B9Ea4b2dC3A4EDEA9";
-
   const fetchReferralTree = async () => {
     if (!account) return;
-    
     try {
       setTreeLoading(true);
-      const { data, error } = await supabase
-        .rpc('get_referral_tree', {
-          user_uuid: account
-        });
-
+      const {
+        data,
+        error
+      } = await supabase.rpc('get_referral_tree', {
+        user_uuid: account
+      });
       if (error) throw error;
       setReferralTree(data);
     } catch (error: any) {
       toast({
         title: "Error Loading Referral Tree",
         description: error.message,
-        variant: "destructive",
+        variant: "destructive"
       });
     } finally {
       setTreeLoading(false);
     }
   };
-
   useEffect(() => {
     const getReferralCode = async () => {
       if (!account) return;
-      
-      const { data, error } = await supabase
-        .from('referrals')
-        .select('referral_code')
-        .eq('user_id', account)
-        .maybeSingle();
-      
+      const {
+        data,
+        error
+      } = await supabase.from('referrals').select('referral_code').eq('user_id', account).maybeSingle();
       if (data) {
         setReferralCode(data.referral_code);
       }
     };
-
     getReferralCode();
     fetchReferralTree();
   }, [account]);
-
   const copyReferralLink = async () => {
     if (!referralCode) return;
-    
     const referralLink = `${window.location.origin}?ref=${referralCode}`;
     await navigator.clipboard.writeText(referralLink);
     setCopied(true);
     toast({
       title: "Copied!",
-      description: "Referral link copied to clipboard",
+      description: "Referral link copied to clipboard"
     });
-    
     setTimeout(() => {
       setCopied(false);
     }, 2000);
   };
-
   const connectWallet = async () => {
     try {
       setLoading(true);
@@ -94,19 +83,19 @@ const Terminal = () => {
         toast({
           title: "Wallet Not Found",
           description: "Please install SafePal wallet extension",
-          variant: "destructive",
+          variant: "destructive"
         });
         return;
       }
-
       const provider = new ethers.BrowserProvider(window.ethereum);
       const network = await provider.getNetwork();
-      
       if (network.chainId !== BigInt(204)) {
         try {
           await window.ethereum.request({
             method: 'wallet_switchEthereumChain',
-            params: [{ chainId: '0xCC' }],
+            params: [{
+              chainId: '0xCC'
+            }]
           });
         } catch (error: any) {
           if (error.code === 4902) {
@@ -118,107 +107,90 @@ const Terminal = () => {
                 nativeCurrency: {
                   name: 'BNB',
                   symbol: 'BNB',
-                  decimals: 18,
+                  decimals: 18
                 },
                 rpcUrls: ['https://opbnb-mainnet-rpc.bnbchain.org'],
-                blockExplorerUrls: ['https://opbnb.bscscan.com/'],
-              }],
+                blockExplorerUrls: ['https://opbnb.bscscan.com/']
+              }]
             });
           }
         }
       }
-
       const accounts = await provider.send("eth_requestAccounts", []);
       const address = accounts[0];
       setAccount(address);
-
       const balance = await provider.getBalance(address);
       setBalance(ethers.formatEther(balance));
-
       toast({
         title: "Connected Successfully",
-        description: "Your SafePal wallet is now connected",
+        description: "Your SafePal wallet is now connected"
       });
     } catch (error: any) {
       toast({
         title: "Connection Error",
         description: error.message,
-        variant: "destructive",
+        variant: "destructive"
       });
     } finally {
       setLoading(false);
     }
   };
-
   const handlePackageSelect = async (packageId: number, amount: number) => {
     if (!account) {
       toast({
         title: "Wallet Not Connected",
         description: "Please connect your wallet first",
-        variant: "destructive",
+        variant: "destructive"
       });
       return;
     }
-
     try {
       setTransacting(true);
-      
-      // First create the referral record
-      const { data: referralData, error: referralError } = await supabase
-        .from('referrals')
-        .insert([
-          {
-            user_id: account,
-            package_id: packageId,
-            level: 1,
-          }
-        ])
-        .select()
-        .single();
 
+      // First create the referral record
+      const {
+        data: referralData,
+        error: referralError
+      } = await supabase.from('referrals').insert([{
+        user_id: account,
+        package_id: packageId,
+        level: 1
+      }]).select().single();
       if (referralError) throw referralError;
 
       // Then send the transaction
       const provider = new ethers.BrowserProvider(window.ethereum);
       const signer = await provider.getSigner();
-      
       const transaction = {
         to: RECIPIENT_ADDRESS,
         value: ethers.parseEther(amount.toString())
       };
-
       const tx = await signer.sendTransaction(transaction);
-      
       toast({
         title: "Transaction Sent",
-        description: "Please wait for confirmation",
+        description: "Please wait for confirmation"
       });
-
       await tx.wait();
-      
+
       // Update balance after transaction
       const newBalance = await provider.getBalance(account);
       setBalance(ethers.formatEther(newBalance));
-
       setReferralCode(referralData.referral_code);
-
       toast({
         title: "Package Activated",
-        description: `Successfully activated package for ${amount} opBNB`,
+        description: `Successfully activated package for ${amount} opBNB`
       });
     } catch (error: any) {
       toast({
         title: "Transaction Failed",
         description: error.message,
-        variant: "destructive",
+        variant: "destructive"
       });
     } finally {
       setTransacting(false);
     }
   };
-
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 text-white p-4 relative overflow-hidden">
+  return <div className="min-h-screen bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 text-white p-4 relative overflow-hidden">
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute -top-40 -left-40 w-80 h-80 bg-blue-500 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob"></div>
         <div className="absolute -bottom-40 -right-40 w-80 h-80 bg-purple-500 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-2000"></div>
@@ -229,9 +201,7 @@ const Terminal = () => {
         <Card className="bg-white/10 backdrop-blur-xl border border-white/20 p-8 rounded-xl shadow-2xl">
           <div className="space-y-6">
             <div className="text-center space-y-2">
-              <h1 className="text-4xl font-extrabold tracking-tight bg-gradient-to-r from-white via-blue-100 to-white bg-clip-text text-transparent mb-2">
-                itradeBNB
-              </h1>
+              <h1 className="text-4xl font-extrabold tracking-tight bg-gradient-to-r from-white via-blue-100 to-white bg-clip-text text-transparent mb-2">WaveBNB</h1>
               <div className="text-xs uppercase tracking-wider text-white/70">Terminal Status</div>
               <h2 className="text-2xl font-bold tracking-tight bg-gradient-to-r from-white via-blue-100 to-white bg-clip-text text-transparent">
                 SafePal Connection
@@ -239,49 +209,26 @@ const Terminal = () => {
             </div>
             
             <div className="space-y-4">
-              {!account ? (
-                <Button 
-                  onClick={connectWallet} 
-                  disabled={loading}
-                  className="w-full bg-gradient-to-r from-blue-400 to-purple-500 hover:from-blue-500 hover:to-purple-600 text-white border-none transition-all duration-300 transform hover:scale-105"
-                >
-                  {loading ? (
-                    <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Connecting...</>
-                  ) : (
-                    'Connect SafePal Wallet'
-                  )}
-                </Button>
-              ) : (
-                <div className="space-y-4">
+              {!account ? <Button onClick={connectWallet} disabled={loading} className="w-full bg-gradient-to-r from-blue-400 to-purple-500 hover:from-blue-500 hover:to-purple-600 text-white border-none transition-all duration-300 transform hover:scale-105">
+                  {loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Connecting...</> : 'Connect SafePal Wallet'}
+                </Button> : <div className="space-y-4">
                   <div className="p-4 rounded-lg bg-white/10 backdrop-blur border border-white/20 transition-all duration-300 hover:bg-white/20">
                     <div className="text-xs text-white/70 mb-1">Connected Account</div>
                     <div className="font-mono text-sm break-all text-white">{account}</div>
                   </div>
                   
-                  {balance && (
-                    <div className="p-4 rounded-lg bg-white/10 backdrop-blur border border-white/20 transition-all duration-300 hover:bg-white/20">
+                  {balance && <div className="p-4 rounded-lg bg-white/10 backdrop-blur border border-white/20 transition-all duration-300 hover:bg-white/20">
                       <div className="text-xs text-white/70 mb-1">opBNB Balance</div>
                       <div className="text-2xl font-bold bg-gradient-to-r from-white via-blue-100 to-white bg-clip-text text-transparent">
                         {Number(balance).toFixed(4)} BNB
                       </div>
-                    </div>
-                  )}
+                    </div>}
 
-                  {referralCode && (
-                    <div className="p-4 rounded-lg bg-white/10 backdrop-blur border border-white/20 transition-all duration-300 hover:bg-white/20">
+                  {referralCode && <div className="p-4 rounded-lg bg-white/10 backdrop-blur border border-white/20 transition-all duration-300 hover:bg-white/20">
                       <div className="flex items-center justify-between">
                         <div className="text-xs text-white/70 mb-1">Your Referral Link</div>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={copyReferralLink}
-                          className="h-8 px-2 text-white hover:bg-white/10"
-                        >
-                          {copied ? (
-                            <Check className="h-4 w-4 text-green-400" />
-                          ) : (
-                            <Copy className="h-4 w-4" />
-                          )}
+                        <Button variant="ghost" size="sm" onClick={copyReferralLink} className="h-8 px-2 text-white hover:bg-white/10">
+                          {copied ? <Check className="h-4 w-4 text-green-400" /> : <Copy className="h-4 w-4" />}
                         </Button>
                       </div>
                       <div className="font-mono text-sm break-all text-white">
@@ -290,16 +237,13 @@ const Terminal = () => {
                       <div className="mt-2 text-xs text-white/50">
                         Share this link to earn rewards from referrals
                       </div>
-                    </div>
-                  )}
-                </div>
-              )}
+                    </div>}
+                </div>}
             </div>
           </div>
         </Card>
 
-        {account && (
-          <div className="space-y-6">
+        {account && <div className="space-y-6">
             <div className="grid gap-6 md:grid-cols-2">
               <div className="space-y-4">
                 <h3 className="text-2xl font-bold text-center text-white">Available Packages</h3>
@@ -310,11 +254,8 @@ const Terminal = () => {
                 <ReferralTree data={referralTree} isLoading={treeLoading} />
               </div>
             </div>
-          </div>
-        )}
+          </div>}
       </div>
-    </div>
-  );
+    </div>;
 };
-
 export default Terminal;
