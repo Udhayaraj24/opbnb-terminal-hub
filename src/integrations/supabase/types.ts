@@ -9,6 +9,24 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      packages: {
+        Row: {
+          amount: number
+          id: number
+          name: string
+        }
+        Insert: {
+          amount: number
+          id?: number
+          name: string
+        }
+        Update: {
+          amount?: number
+          id?: number
+          name?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string | null
@@ -33,12 +51,61 @@ export type Database = {
         }
         Relationships: []
       }
+      referrals: {
+        Row: {
+          created_at: string | null
+          id: string
+          level: number | null
+          package_id: number | null
+          referral_code: string | null
+          referrer_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          level?: number | null
+          package_id?: number | null
+          referral_code?: string | null
+          referrer_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          level?: number | null
+          package_id?: number | null
+          referral_code?: string | null
+          referrer_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "referrals_package_id_fkey"
+            columns: ["package_id"]
+            isOneToOne: false
+            referencedRelation: "packages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_referral_tree: {
+        Args: {
+          user_uuid: string
+        }
+        Returns: {
+          user_id: string
+          referrer_id: string
+          level: number
+          package_id: number
+          referral_code: string
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never

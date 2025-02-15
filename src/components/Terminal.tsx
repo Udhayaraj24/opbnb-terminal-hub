@@ -1,27 +1,40 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ethers } from 'ethers';
 import { useToast } from '@/components/ui/use-toast';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Loader2, Leaf, ArrowUp, Users, Award, Star } from 'lucide-react';
+import { Loader2, Leaf, ArrowUp, Users } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import Packages from './Packages';
 
 const Terminal = () => {
   const [account, setAccount] = useState<string | null>(null);
   const [balance, setBalance] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [transacting, setTransacting] = useState(false);
+  const [referralCode, setReferralCode] = useState<string | null>(null);
   const { toast } = useToast();
 
   const RECIPIENT_ADDRESS = "0xE484201328c61Fbc8aCc316B9Ea4b2dC3A4EDEA9";
 
-  const investorLevels = [
-    { name: 'Newbie', amount: 0.001, icon: Leaf, gradient: 'from-green-400 to-emerald-500' },
-    { name: 'Growing', amount: 0.002, icon: ArrowUp, gradient: 'from-blue-400 to-cyan-500' },
-    { name: 'Establisher', amount: 0.004, icon: Users, gradient: 'from-purple-400 to-indigo-500' },
-    { name: 'Top-Tier', amount: 0.008, icon: Award, gradient: 'from-orange-400 to-pink-500' },
-    { name: 'Global Influencer', amount: 0.016, icon: Star, gradient: 'from-yellow-400 to-amber-500' },
-  ];
+  useEffect(() => {
+    const getReferralCode = async () => {
+      if (!account) return;
+      
+      const { data, error } = await supabase
+        .from('referrals')
+        .select('referral_code')
+        .eq('user_id', account)
+        .single();
+      
+      if (data) {
+        setReferralCode(data.referral_code);
+      }
+    };
+
+    getReferralCode();
+  }, [account]);
 
   const connectWallet = async () => {
     try {
@@ -38,12 +51,11 @@ const Terminal = () => {
       const provider = new ethers.BrowserProvider(window.ethereum);
       const network = await provider.getNetwork();
       
-      // Check if we're on opBNB network (chainId: 204)
       if (network.chainId !== BigInt(204)) {
         try {
           await window.ethereum.request({
             method: 'wallet_switchEthereumChain',
-            params: [{ chainId: '0xCC' }], // 204 in hex
+            params: [{ chainId: '0xCC' }],
           });
         } catch (error: any) {
           if (error.code === 4902) {
@@ -87,7 +99,7 @@ const Terminal = () => {
     }
   };
 
-  const sendTransaction = async (amount: number) => {
+  const handlePackageSelect = async (packageId: number, amount: number) => {
     if (!account) {
       toast({
         title: "Wallet Not Connected",
@@ -99,6 +111,23 @@ const Terminal = () => {
 
     try {
       setTransacting(true);
+      
+      // First create the referral record
+      const { data: referralData, error: referralError } = await supabase
+        .from('referrals')
+        .insert([
+          {
+            user_id: account,
+            package_id: packageId,
+            level: 1,
+          }
+        ])
+        .select()
+        .single();
+
+      if (referralError) throw referralError;
+
+      // Then send the transaction
       const provider = new ethers.BrowserProvider(window.ethereum);
       const signer = await provider.getSigner();
       
@@ -120,9 +149,11 @@ const Terminal = () => {
       const newBalance = await provider.getBalance(account);
       setBalance(ethers.formatEther(newBalance));
 
+      setReferralCode(referralData.referral_code);
+
       toast({
-        title: "Transaction Confirmed",
-        description: `Successfully sent ${amount} opBNB`,
+        title: "Package Activated",
+        description: `Successfully activated package for ${amount} opBNB`,
       });
     } catch (error: any) {
       toast({
@@ -136,15 +167,14 @@ const Terminal = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 text-white flex items-center justify-center p-4 relative overflow-hidden">
-      {/* Animated background circles */}
+    <div className="min-h-screen bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 text-white p-4 relative overflow-hidden">
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute -top-40 -left-40 w-80 h-80 bg-blue-500 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob"></div>
         <div className="absolute -bottom-40 -right-40 w-80 h-80 bg-purple-500 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-2000"></div>
         <div className="absolute top-40 right-40 w-80 h-80 bg-pink-500 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-4000"></div>
       </div>
 
-      <div className="max-w-4xl w-full space-y-6 z-10">
+      <div className="max-w-6xl mx-auto space-y-6 z-10 relative">
         <Card className="bg-white/10 backdrop-blur-xl border border-white/20 p-8 rounded-xl shadow-2xl">
           <div className="space-y-6">
             <div className="text-center space-y-2">
@@ -185,47 +215,27 @@ const Terminal = () => {
                       </div>
                     </div>
                   )}
+
+                  {referralCode && (
+                    <div className="p-4 rounded-lg bg-white/10 backdrop-blur border border-white/20 transition-all duration-300 hover:bg-white/20">
+                      <div className="text-xs text-white/70 mb-1">Your Referral Link</div>
+                      <div className="font-mono text-sm break-all text-white">
+                        {`${window.location.origin}?ref=${referralCode}`}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
           </div>
         </Card>
 
-        <div className="space-y-4">
-          <h3 className="text-xl font-bold text-center text-white/90">Investor Levels</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {investorLevels.map((level, index) => {
-              const Icon = level.icon;
-              return (
-                <Button
-                  key={level.name}
-                  variant="ghost"
-                  disabled={!account || transacting}
-                  onClick={() => sendTransaction(level.amount)}
-                  className={`
-                    h-auto p-4 w-full bg-gradient-to-r ${level.gradient} 
-                    hover:opacity-90 border-2 border-white/20 backdrop-blur-lg
-                    flex flex-col items-center space-y-2 group transition-all duration-300
-                    transform hover:scale-105 hover:shadow-xl
-                    disabled:opacity-50 disabled:cursor-not-allowed
-                  `}
-                >
-                  {transacting ? (
-                    <Loader2 className="w-6 h-6 animate-spin" />
-                  ) : (
-                    <>
-                      <Icon className="w-8 h-8 mb-2" />
-                      <span className="font-bold text-lg">{level.name}</span>
-                      <span className="text-sm font-medium bg-white/20 px-3 py-1 rounded-full">
-                        {level.amount} opBNB
-                      </span>
-                    </>
-                  )}
-                </Button>
-              );
-            })}
+        {account && (
+          <div className="space-y-4">
+            <h3 className="text-2xl font-bold text-center text-white">Available Packages</h3>
+            <Packages onSelect={handlePackageSelect} isLoading={transacting} />
           </div>
-        </div>
+        )}
       </div>
     </div>
   );
