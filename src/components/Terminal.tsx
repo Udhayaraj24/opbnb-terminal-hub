@@ -1,10 +1,9 @@
-
 import React, { useState, useEffect } from 'react';
 import { ethers } from 'ethers';
 import { useToast } from '@/components/ui/use-toast';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Copy, Check } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import Packages from './Packages';
 import ReferralTree from './ReferralTree';
@@ -25,6 +24,7 @@ const Terminal = () => {
   const [referralCode, setReferralCode] = useState<string | null>(null);
   const [referralTree, setReferralTree] = useState<ReferralNode[] | null>(null);
   const [treeLoading, setTreeLoading] = useState(false);
+  const [copied, setCopied] = useState(false);
   const { toast } = useToast();
 
   const RECIPIENT_ADDRESS = "0xE484201328c61Fbc8aCc316B9Ea4b2dC3A4EDEA9";
@@ -70,6 +70,22 @@ const Terminal = () => {
     getReferralCode();
     fetchReferralTree();
   }, [account]);
+
+  const copyReferralLink = async () => {
+    if (!referralCode) return;
+    
+    const referralLink = `${window.location.origin}?ref=${referralCode}`;
+    await navigator.clipboard.writeText(referralLink);
+    setCopied(true);
+    toast({
+      title: "Copied!",
+      description: "Referral link copied to clipboard",
+    });
+    
+    setTimeout(() => {
+      setCopied(false);
+    }, 2000);
+  };
 
   const connectWallet = async () => {
     try {
@@ -253,9 +269,26 @@ const Terminal = () => {
 
                   {referralCode && (
                     <div className="p-4 rounded-lg bg-white/10 backdrop-blur border border-white/20 transition-all duration-300 hover:bg-white/20">
-                      <div className="text-xs text-white/70 mb-1">Your Referral Link</div>
+                      <div className="flex items-center justify-between">
+                        <div className="text-xs text-white/70 mb-1">Your Referral Link</div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={copyReferralLink}
+                          className="h-8 px-2 text-white hover:bg-white/10"
+                        >
+                          {copied ? (
+                            <Check className="h-4 w-4 text-green-400" />
+                          ) : (
+                            <Copy className="h-4 w-4" />
+                          )}
+                        </Button>
+                      </div>
                       <div className="font-mono text-sm break-all text-white">
                         {`${window.location.origin}?ref=${referralCode}`}
+                      </div>
+                      <div className="mt-2 text-xs text-white/50">
+                        Share this link to earn rewards from referrals
                       </div>
                     </div>
                   )}
