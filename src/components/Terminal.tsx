@@ -26,7 +26,7 @@ const Terminal = () => {
         .from('referrals')
         .select('referral_code')
         .eq('user_id', account)
-        .single();
+        .maybeSingle();
       
       if (data) {
         setReferralCode(data.referral_code);
