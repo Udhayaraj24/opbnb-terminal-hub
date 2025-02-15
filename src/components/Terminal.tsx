@@ -262,7 +262,7 @@ const Terminal = () => {
                     <div className="p-4 rounded-lg bg-white/10 backdrop-blur border border-white/20 transition-all duration-300 hover:bg-white/20">
                       <div className="text-xs text-white/70 mb-1">opBNB Balance</div>
                       <div className="text-2xl font-bold bg-gradient-to-r from-white via-blue-100 to-white bg-clip-text text-transparent">
-                        {parseFloat(balance).toFixed(4)} BNB
+                        {Number(balance).toFixed(4)} BNB
                       </div>
                     </div>
                   )}

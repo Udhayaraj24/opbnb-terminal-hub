@@ -38,7 +38,7 @@ const Packages: React.FC<PackagesProps> = ({ onSelect, isLoading }) => {
           className="p-6 bg-white/10 backdrop-blur-xl border border-white/20 hover:bg-white/20 transition-all"
         >
           <h3 className="text-xl font-bold text-white mb-2">{pkg.name}</h3>
-          <p className="text-white/90 mb-4">{pkg.amount} opBNB</p>
+          <p className="text-white/90 mb-4">{pkg.amount.toFixed(4)} opBNB</p>
           <Button
             onClick={() => onSelect(pkg.id, pkg.amount)}
             disabled={isLoading}
