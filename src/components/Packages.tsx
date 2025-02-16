@@ -6,7 +6,7 @@ import { Package } from '@/types/supabase';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
-import { Loader2 } from 'lucide-react';
+import { Package as PackageIcon, Loader2 } from 'lucide-react';
 
 interface PackagesProps {
   onSelect: (packageId: number, amount: number) => void;
@@ -31,25 +31,30 @@ const Packages: React.FC<PackagesProps> = ({ onSelect, isLoading }) => {
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
       {packages?.map((pkg) => (
         <Card
           key={pkg.id}
-          className="p-6 bg-white/10 backdrop-blur-xl border border-white/20 hover:bg-white/20 transition-all"
+          className="p-6 bg-white/10 backdrop-blur-xl border border-white/20 hover:bg-white/20 transition-all group"
         >
-          <h3 className="text-xl font-bold text-white mb-2">{pkg.name}</h3>
-          <p className="text-white/90 mb-4">{pkg.amount.toFixed(4)} opBNB</p>
-          <Button
-            onClick={() => onSelect(pkg.id, pkg.amount)}
-            disabled={isLoading}
-            className="w-full bg-gradient-to-r from-blue-400 to-purple-500 hover:from-blue-500 hover:to-purple-600"
-          >
-            {isLoading ? (
-              <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Processing...</>
-            ) : (
-              'Select Package'
-            )}
-          </Button>
+          <div className="flex flex-col items-center text-center">
+            <PackageIcon className="h-12 w-12 mb-4 text-white/70 group-hover:text-white transition-colors" />
+            <h3 className="text-xl font-bold text-white mb-2">{pkg.name}</h3>
+            <p className="text-2xl font-bold text-white/90 mb-4">
+              {pkg.amount.toFixed(6)} opBNB
+            </p>
+            <Button
+              onClick={() => onSelect(pkg.id, pkg.amount)}
+              disabled={isLoading}
+              className="w-full bg-gradient-to-r from-blue-400 to-purple-500 hover:from-blue-500 hover:to-purple-600"
+            >
+              {isLoading ? (
+                <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Processing...</>
+              ) : (
+                'Select Package'
+              )}
+            </Button>
+          </div>
         </Card>
       ))}
     </div>

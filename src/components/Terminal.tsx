@@ -190,14 +190,15 @@ const Terminal = () => {
       setTransacting(false);
     }
   };
-  return <div className="min-h-screen bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 text-white p-4 relative overflow-hidden">
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 text-white p-4 relative overflow-hidden">
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute -top-40 -left-40 w-80 h-80 bg-blue-500 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob"></div>
         <div className="absolute -bottom-40 -right-40 w-80 h-80 bg-purple-500 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-2000"></div>
         <div className="absolute top-40 right-40 w-80 h-80 bg-pink-500 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-4000"></div>
       </div>
 
-      <div className="max-w-6xl mx-auto space-y-6 z-10 relative">
+      <div className="max-w-7xl mx-auto space-y-6 z-10 relative">
         <Card className="bg-white/10 backdrop-blur-xl border border-white/20 p-8 rounded-xl shadow-2xl">
           <div className="space-y-6">
             <div className="text-center space-y-2">
@@ -243,19 +244,23 @@ const Terminal = () => {
           </div>
         </Card>
 
-        {account && <div className="space-y-6">
-            <div className="grid gap-6 md:grid-cols-2">
+        {account && (
+          <div className="space-y-6">
+            <div className="grid gap-6">
               <div className="space-y-4">
-                <h3 className="text-2xl font-bold text-center text-white">Available Packages</h3>
+                <h3 className="text-3xl font-bold text-center text-white mb-8">Available Packages</h3>
                 <Packages onSelect={handlePackageSelect} isLoading={transacting} />
               </div>
-              <div className="space-y-4">
-                <h3 className="text-2xl font-bold text-center text-white">Network Overview</h3>
+              <div className="space-y-4 mt-8">
+                <h3 className="text-3xl font-bold text-center text-white mb-8">Network Overview</h3>
                 <ReferralTree data={referralTree} isLoading={treeLoading} />
               </div>
             </div>
-          </div>}
+          </div>
+        )}
       </div>
-    </div>;
+    </div>
+  );
 };
+
 export default Terminal;
