@@ -98,31 +98,18 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: string
       }
-      get_referral_tree:
-        | {
-            Args: {
-              user_uuid: string
-            }
-            Returns: {
-              user_id: string
-              referrer_id: string
-              level: number
-              package_id: number
-              referral_code: string
-            }[]
-          }
-        | {
-            Args: {
-              user_uuid: string
-            }
-            Returns: {
-              user_id: string
-              referrer_id: string
-              level: number
-              package_id: number
-              referral_code: string
-            }[]
-          }
+      get_referral_tree: {
+        Args: {
+          user_uuid: string
+        }
+        Returns: {
+          user_id: string
+          referrer_id: string
+          level: number
+          package_id: number
+          referral_code: string
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never

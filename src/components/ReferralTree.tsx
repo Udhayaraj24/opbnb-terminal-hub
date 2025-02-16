@@ -30,12 +30,21 @@ const ReferralTree: React.FC<ReferralTreeProps> = ({ data, isLoading }) => {
   const { toast } = useToast();
 
   const copyReferralLink = async (referralCode: string) => {
-    const referralLink = `${window.location.origin}?ref=${referralCode}`;
-    await navigator.clipboard.writeText(referralLink);
-    toast({
-      title: "Copied!",
-      description: "Referral link copied to clipboard"
-    });
+    try {
+      const referralLink = `${window.location.origin}?ref=${referralCode}`;
+      await navigator.clipboard.writeText(referralLink);
+      toast({
+        title: "Copied!",
+        description: "Referral link copied to clipboard"
+      });
+    } catch (error) {
+      console.error('Failed to copy referral link:', error);
+      toast({
+        title: "Error",
+        description: "Failed to copy referral link",
+        variant: "destructive"
+      });
+    }
   };
 
   if (isLoading) {
