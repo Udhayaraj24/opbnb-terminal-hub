@@ -94,6 +94,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      generate_referral_code: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
       get_referral_tree:
         | {
             Args: {

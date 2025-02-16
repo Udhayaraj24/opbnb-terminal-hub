@@ -30,11 +30,6 @@ const Packages: React.FC<PackagesProps> = ({ onSelect, isLoading }) => {
     return <div className="flex justify-center"><Loader2 className="h-8 w-8 animate-spin" /></div>;
   }
 
-  const formatAmount = (amount: number) => {
-    // Convert the amount to a string with exactly 6 decimal places
-    return amount.toFixed(6);
-  };
-
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
       {packages?.map((pkg) => (
@@ -46,7 +41,7 @@ const Packages: React.FC<PackagesProps> = ({ onSelect, isLoading }) => {
             <PackageIcon className="h-12 w-12 mb-4 text-white/70 group-hover:text-white transition-colors" />
             <h3 className="text-xl font-bold text-white mb-2">{pkg.name}</h3>
             <p className="text-2xl font-bold text-white/90 mb-4">
-              {formatAmount(Number(pkg.amount))} opBNB
+              {pkg.amount} opBNB
             </p>
             <Button
               onClick={() => onSelect(pkg.id, pkg.amount)}
