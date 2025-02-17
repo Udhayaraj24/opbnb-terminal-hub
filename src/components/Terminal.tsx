@@ -48,6 +48,16 @@ const Terminal = () => {
 
   const RECIPIENT_ADDRESS = "0xE484201328c61Fbc8aCc316B9Ea4b2dC3A4EDEA9";
 
+  const updateBalance = async (address: string) => {
+    try {
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const balance = await provider.getBalance(address);
+      setBalance(ethers.formatEther(balance));
+    } catch (error) {
+      console.error('Error fetching balance:', error);
+    }
+  };
+
   const fetchUserBonuses = async () => {
     if (!account) return;
     try {
@@ -155,6 +165,18 @@ const Terminal = () => {
     }, 2000);
   };
 
+  // Update balance periodically
+  useEffect(() => {
+    if (!account) return;
+
+    updateBalance(account);
+    const interval = setInterval(() => {
+      updateBalance(account);
+    }, 10000); // Update every 10 seconds
+
+    return () => clearInterval(interval);
+  }, [account]);
+
   const handlePackageSelect = async (packageId: number, amount: number) => {
     if (!account) {
       toast({
@@ -228,12 +250,10 @@ const Terminal = () => {
           description: `Sending ${share.amount} BNB to ${share.address.slice(0, 6)}...${share.address.slice(-4)} (${share.percentage}%${share.level ? ` - Level ${share.level}` : ''})`
         });
         await tx.wait();
+        
+        // Update balance after each transaction
+        await updateBalance(account);
       }
-
-      // Update balance after transactions
-      const newBalance = await provider.getBalance(account);
-      setBalance(ethers.formatEther(newBalance));
-      setReferralCode(referralData.referral_code);
 
       // Refresh data
       await fetchUserBonuses();
@@ -297,16 +317,14 @@ const Terminal = () => {
       setAccount(address);
       
       // Fetch initial balance
-      const balance = await provider.getBalance(address);
-      setBalance(ethers.formatEther(balance));
+      await updateBalance(address);
 
       // Set up balance update on account change
       window.ethereum.on('accountsChanged', async (accounts: string[]) => {
         if (accounts.length > 0) {
           const newAddress = accounts[0];
           setAccount(newAddress);
-          const newBalance = await provider.getBalance(newAddress);
-          setBalance(ethers.formatEther(newBalance));
+          await updateBalance(newAddress);
         } else {
           setAccount(null);
           setBalance(null);
@@ -316,8 +334,14 @@ const Terminal = () => {
       // Set up balance update on network change
       window.ethereum.on('chainChanged', async () => {
         if (address) {
-          const newBalance = await provider.getBalance(address);
-          setBalance(ethers.formatEther(newBalance));
+          await updateBalance(address);
+        }
+      });
+
+      // Set up balance update on block change
+      provider.on('block', async () => {
+        if (address) {
+          await updateBalance(address);
         }
       });
 
