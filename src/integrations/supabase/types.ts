@@ -53,30 +53,54 @@ export type Database = {
       }
       referrals: {
         Row: {
+          community_size: number | null
           created_at: string | null
+          direct_bonus: number | null
           id: string
           level: number | null
+          level_up_bonus: number | null
           package_id: number | null
+          recent_bonus: number | null
+          referral_bonus: number | null
           referral_code: string | null
           referrer_id: string | null
+          rewarded_bonus: number | null
+          royalty_bonus: number | null
+          upgrade_bonus: number | null
           user_id: string | null
         }
         Insert: {
+          community_size?: number | null
           created_at?: string | null
+          direct_bonus?: number | null
           id?: string
           level?: number | null
+          level_up_bonus?: number | null
           package_id?: number | null
+          recent_bonus?: number | null
+          referral_bonus?: number | null
           referral_code?: string | null
           referrer_id?: string | null
+          rewarded_bonus?: number | null
+          royalty_bonus?: number | null
+          upgrade_bonus?: number | null
           user_id?: string | null
         }
         Update: {
+          community_size?: number | null
           created_at?: string | null
+          direct_bonus?: number | null
           id?: string
           level?: number | null
+          level_up_bonus?: number | null
           package_id?: number | null
+          recent_bonus?: number | null
+          referral_bonus?: number | null
           referral_code?: string | null
           referrer_id?: string | null
+          rewarded_bonus?: number | null
+          royalty_bonus?: number | null
+          upgrade_bonus?: number | null
           user_id?: string | null
         }
         Relationships: [
@@ -91,7 +115,21 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      user_bonuses: {
+        Row: {
+          community_size: number | null
+          direct_referrals_count: number | null
+          recent_bonus: number | null
+          total_direct_bonus: number | null
+          total_level_up_bonus: number | null
+          total_referral_bonus: number | null
+          total_rewarded_bonus: number | null
+          total_royalty_bonus: number | null
+          total_upgrade_bonus: number | null
+          user_id: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       generate_referral_code: {

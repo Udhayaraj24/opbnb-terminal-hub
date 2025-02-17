@@ -7,6 +7,9 @@ import { Loader2, Copy, Check } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import Packages from './Packages';
 import ReferralTree from './ReferralTree';
+import Stats from './Stats';
+import { fetchBNBPrice } from '@/utils/price';
+
 interface ReferralNode {
   user_id: string;
   referrer_id: string | null;
@@ -14,6 +17,19 @@ interface ReferralNode {
   package_id: number;
   referral_code: string;
 }
+
+interface UserBonuses {
+  direct_referrals_count: number;
+  community_size: number;
+  total_direct_bonus: number;
+  total_referral_bonus: number;
+  total_upgrade_bonus: number;
+  total_level_up_bonus: number;
+  total_royalty_bonus: number;
+  total_rewarded_bonus: number;
+  recent_bonus: number;
+}
+
 const Terminal = () => {
   const [account, setAccount] = useState<string | null>(null);
   const [balance, setBalance] = useState<string | null>(null);
@@ -23,10 +39,42 @@ const Terminal = () => {
   const [referralTree, setReferralTree] = useState<ReferralNode[] | null>(null);
   const [treeLoading, setTreeLoading] = useState(false);
   const [copied, setCopied] = useState(false);
-  const {
-    toast
-  } = useToast();
+  const [bnbPrice, setBnbPrice] = useState(0);
+  const [userBonuses, setUserBonuses] = useState<UserBonuses | null>(null);
+  const [bonusesLoading, setBonusesLoading] = useState(false);
+  const { toast } = useToast();
+
   const RECIPIENT_ADDRESS = "0xE484201328c61Fbc8aCc316B9Ea4b2dC3A4EDEA9";
+
+  const fetchUserBonuses = async () => {
+    if (!account) return;
+    try {
+      setBonusesLoading(true);
+      const { data, error } = await supabase
+        .from('user_bonuses')
+        .select('*')
+        .eq('user_id', account)
+        .single();
+      
+      if (error) throw error;
+      setUserBonuses(data);
+    } catch (error: any) {
+      console.error('Error fetching user bonuses:', error);
+    } finally {
+      setBonusesLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    const updateBNBPrice = async () => {
+      const price = await fetchBNBPrice();
+      setBnbPrice(price);
+    };
+    updateBNBPrice();
+    const interval = setInterval(updateBNBPrice, 60000); // Update every minute
+    return () => clearInterval(interval);
+  }, []);
+
   const fetchReferralTree = async () => {
     if (!account) return;
     try {
@@ -49,6 +97,7 @@ const Terminal = () => {
       setTreeLoading(false);
     }
   };
+
   useEffect(() => {
     const getReferralCode = async () => {
       if (!account) return;
@@ -63,6 +112,7 @@ const Terminal = () => {
     getReferralCode();
     fetchReferralTree();
   }, [account]);
+
   const copyReferralLink = async () => {
     if (!referralCode) return;
     const referralLink = `${window.location.origin}?ref=${referralCode}`;
@@ -76,6 +126,7 @@ const Terminal = () => {
       setCopied(false);
     }, 2000);
   };
+
   const connectWallet = async () => {
     try {
       setLoading(true);
@@ -135,6 +186,7 @@ const Terminal = () => {
       setLoading(false);
     }
   };
+
   const handlePackageSelect = async (packageId: number, amount: number) => {
     if (!account) {
       toast({
@@ -190,6 +242,7 @@ const Terminal = () => {
       setTransacting(false);
     }
   };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 text-white p-4 relative overflow-hidden">
       <div className="absolute inset-0 overflow-hidden">
@@ -202,44 +255,67 @@ const Terminal = () => {
         <Card className="bg-white/10 backdrop-blur-xl border border-white/20 p-8 rounded-xl shadow-2xl">
           <div className="space-y-6">
             <div className="text-center space-y-2">
-              <h1 className="text-4xl font-extrabold tracking-tight bg-gradient-to-r from-white via-blue-100 to-white bg-clip-text text-transparent mb-2">WaveBNB</h1>
+              <h1 className="text-4xl font-extrabold tracking-tight bg-gradient-to-r from-white via-blue-100 to-white bg-clip-text text-transparent mb-2">BNB Terminal</h1>
               <div className="text-xs uppercase tracking-wider text-white/70">Terminal Status</div>
               <h2 className="text-2xl font-bold tracking-tight bg-gradient-to-r from-white via-blue-100 to-white bg-clip-text text-transparent">
-                SafePal Connection
+                Wallet Connection
               </h2>
             </div>
             
             <div className="space-y-4">
-              {!account ? <Button onClick={connectWallet} disabled={loading} className="w-full bg-gradient-to-r from-blue-400 to-purple-500 hover:from-blue-500 hover:to-purple-600 text-white border-none transition-all duration-300 transform hover:scale-105">
-                  {loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Connecting...</> : 'Connect SafePal Wallet'}
-                </Button> : <div className="space-y-4">
+              {!account ? (
+                <Button 
+                  onClick={connectWallet} 
+                  disabled={loading} 
+                  className="w-full bg-gradient-to-r from-blue-400 to-purple-500 hover:from-blue-500 hover:to-purple-600 text-white border-none transition-all duration-300 transform hover:scale-105"
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" /> 
+                      Connecting...
+                    </>
+                  ) : (
+                    'Connect Wallet'
+                  )}
+                </Button>
+              ) : (
+                <div className="space-y-4">
                   <div className="p-4 rounded-lg bg-white/10 backdrop-blur border border-white/20 transition-all duration-300 hover:bg-white/20">
                     <div className="text-xs text-white/70 mb-1">Connected Account</div>
                     <div className="font-mono text-sm break-all text-white">{account}</div>
                   </div>
                   
-                  {balance && <div className="p-4 rounded-lg bg-white/10 backdrop-blur border border-white/20 transition-all duration-300 hover:bg-white/20">
-                      <div className="text-xs text-white/70 mb-1">opBNB Balance</div>
+                  {balance && (
+                    <div className="p-4 rounded-lg bg-white/10 backdrop-blur border border-white/20 transition-all duration-300 hover:bg-white/20">
+                      <div className="text-xs text-white/70 mb-1">BNB Balance</div>
                       <div className="text-2xl font-bold bg-gradient-to-r from-white via-blue-100 to-white bg-clip-text text-transparent">
                         {Number(balance).toFixed(4)} BNB
                       </div>
-                    </div>}
+                      {bnbPrice > 0 && (
+                        <div className="text-sm text-white/50 mt-1">
+                          ≈ ${(Number(balance) * bnbPrice).toFixed(2)} USD
+                        </div>
+                      )}
+                    </div>
+                  )}
 
-                  {referralCode && <div className="p-4 rounded-lg bg-white/10 backdrop-blur border border-white/20 transition-all duration-300 hover:bg-white/20">
-                      <div className="flex items-center justify-between">
-                        <div className="text-xs text-white/70 mb-1">Your Referral Link</div>
-                        <Button variant="ghost" size="sm" onClick={copyReferralLink} className="h-8 px-2 text-white hover:bg-white/10">
-                          {copied ? <Check className="h-4 w-4 text-green-400" /> : <Copy className="h-4 w-4" />}
-                        </Button>
-                      </div>
-                      <div className="font-mono text-sm break-all text-white">
-                        {`${window.location.origin}?ref=${referralCode}`}
-                      </div>
-                      <div className="mt-2 text-xs text-white/50">
-                        Share this link to earn rewards from referrals
-                      </div>
-                    </div>}
-                </div>}
+                  {userBonuses && (
+                    <Stats
+                      directReferrals={userBonuses.direct_referrals_count}
+                      communitySize={userBonuses.community_size}
+                      directBonus={userBonuses.total_direct_bonus}
+                      referralBonus={userBonuses.total_referral_bonus}
+                      upgradeBonus={userBonuses.total_upgrade_bonus}
+                      levelUpBonus={userBonuses.total_level_up_bonus}
+                      royaltyBonus={userBonuses.total_royalty_bonus}
+                      rewardedBonus={userBonuses.total_rewarded_bonus}
+                      recentBonus={userBonuses.recent_bonus}
+                      bnbPrice={bnbPrice}
+                      isLoading={bonusesLoading}
+                    />
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </Card>
