@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { ethers } from 'ethers';
 import { useToast } from '@/components/ui/use-toast';
@@ -243,8 +242,32 @@ const Terminal = () => {
       const accounts = await provider.send("eth_requestAccounts", []);
       const address = accounts[0];
       setAccount(address);
+      
+      // Fetch initial balance
       const balance = await provider.getBalance(address);
       setBalance(ethers.formatEther(balance));
+
+      // Set up balance update on account change
+      window.ethereum.on('accountsChanged', async (accounts: string[]) => {
+        if (accounts.length > 0) {
+          const newAddress = accounts[0];
+          setAccount(newAddress);
+          const newBalance = await provider.getBalance(newAddress);
+          setBalance(ethers.formatEther(newBalance));
+        } else {
+          setAccount(null);
+          setBalance(null);
+        }
+      });
+
+      // Set up balance update on network change
+      window.ethereum.on('chainChanged', async () => {
+        if (address) {
+          const newBalance = await provider.getBalance(address);
+          setBalance(ethers.formatEther(newBalance));
+        }
+      });
+
       toast({
         title: "Connected Successfully",
         description: "Your SafePal wallet is now connected"
@@ -259,6 +282,16 @@ const Terminal = () => {
       setLoading(false);
     }
   };
+
+  // Add cleanup for event listeners
+  useEffect(() => {
+    return () => {
+      if (window.ethereum) {
+        window.ethereum.removeAllListeners('accountsChanged');
+        window.ethereum.removeAllListeners('chainChanged');
+      }
+    };
+  }, []);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 text-white p-4 relative overflow-hidden">

@@ -41,7 +41,7 @@ const Packages: React.FC<PackagesProps> = ({ onSelect, isLoading }) => {
             <PackageIcon className="h-12 w-12 mb-4 text-white/70 group-hover:text-white transition-colors" />
             <h3 className="text-xl font-bold text-white mb-2">{pkg.name}</h3>
             <p className="text-2xl font-bold text-white/90 mb-4">
-              {pkg.amount} opBNB
+              {pkg.amount} BNB
             </p>
             <Button
               onClick={() => onSelect(pkg.id, pkg.amount)}
