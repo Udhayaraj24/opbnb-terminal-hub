@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { ethers } from 'ethers';
 import { useToast } from '@/components/ui/use-toast';
@@ -42,6 +43,7 @@ const Terminal = () => {
   const [bnbPrice, setBnbPrice] = useState(0);
   const [userBonuses, setUserBonuses] = useState<UserBonuses | null>(null);
   const [bonusesLoading, setBonusesLoading] = useState(false);
+  const [referralDetails, setReferralDetails] = useState<any | null>(null);
   const { toast } = useToast();
 
   const RECIPIENT_ADDRESS = "0xE484201328c61Fbc8aCc316B9Ea4b2dC3A4EDEA9";
@@ -65,6 +67,22 @@ const Terminal = () => {
     }
   };
 
+  const fetchReferralDetails = async () => {
+    if (!account) return;
+    try {
+      const { data, error } = await supabase
+        .from('referrals')
+        .select('*')
+        .eq('user_id', account)
+        .single();
+      
+      if (error) throw error;
+      setReferralDetails(data);
+    } catch (error: any) {
+      console.error('Error fetching referral details:', error);
+    }
+  };
+
   useEffect(() => {
     const updateBNBPrice = async () => {
       const price = await fetchBNBPrice();
@@ -79,10 +97,7 @@ const Terminal = () => {
     if (!account) return;
     try {
       setTreeLoading(true);
-      const {
-        data,
-        error
-      } = await supabase.rpc('get_referral_tree', {
+      const { data, error } = await supabase.rpc('get_referral_tree', {
         user_uuid: account
       });
       if (error) throw error;
@@ -101,16 +116,19 @@ const Terminal = () => {
   useEffect(() => {
     const getReferralCode = async () => {
       if (!account) return;
-      const {
-        data,
-        error
-      } = await supabase.from('referrals').select('referral_code').eq('user_id', account).maybeSingle();
+      const { data, error } = await supabase
+        .from('referrals')
+        .select('referral_code')
+        .eq('user_id', account)
+        .maybeSingle();
       if (data) {
         setReferralCode(data.referral_code);
       }
     };
     getReferralCode();
     fetchReferralTree();
+    fetchReferralDetails();
+    fetchUserBonuses();
   }, [account]);
 
   const copyReferralLink = async () => {
@@ -125,6 +143,63 @@ const Terminal = () => {
     setTimeout(() => {
       setCopied(false);
     }, 2000);
+  };
+
+  const handlePackageSelect = async (packageId: number, amount: number) => {
+    if (!account) {
+      toast({
+        title: "Wallet Not Connected",
+        description: "Please connect your wallet first",
+        variant: "destructive"
+      });
+      return;
+    }
+    try {
+      setTransacting(true);
+
+      // First create the referral record
+      const { data: referralData, error: referralError } = await supabase
+        .from('referrals')
+        .insert([{
+          user_id: account,
+          package_id: packageId,
+          level: 1
+        }])
+        .select()
+        .single();
+      if (referralError) throw referralError;
+
+      // Then send the transaction
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
+      const transaction = {
+        to: RECIPIENT_ADDRESS,
+        value: ethers.parseEther(amount.toString())
+      };
+      const tx = await signer.sendTransaction(transaction);
+      toast({
+        title: "Transaction Sent",
+        description: "Please wait for confirmation"
+      });
+      await tx.wait();
+
+      // Update balance after transaction
+      const newBalance = await provider.getBalance(account);
+      setBalance(ethers.formatEther(newBalance));
+      setReferralCode(referralData.referral_code);
+      toast({
+        title: "Package Activated",
+        description: `Successfully activated package for ${amount} BNB`
+      });
+    } catch (error: any) {
+      toast({
+        title: "Transaction Failed",
+        description: error.message,
+        variant: "destructive"
+      });
+    } finally {
+      setTransacting(false);
+    }
   };
 
   const connectWallet = async () => {
@@ -144,9 +219,7 @@ const Terminal = () => {
         try {
           await window.ethereum.request({
             method: 'wallet_switchEthereumChain',
-            params: [{
-              chainId: '0xCC'
-            }]
+            params: [{ chainId: '0xCC' }]
           });
         } catch (error: any) {
           if (error.code === 4902) {
@@ -186,88 +259,6 @@ const Terminal = () => {
       setLoading(false);
     }
   };
-
-  const handlePackageSelect = async (packageId: number, amount: number) => {
-    if (!account) {
-      toast({
-        title: "Wallet Not Connected",
-        description: "Please connect your wallet first",
-        variant: "destructive"
-      });
-      return;
-    }
-    try {
-      setTransacting(true);
-
-      // First create the referral record
-      const {
-        data: referralData,
-        error: referralError
-      } = await supabase.from('referrals').insert([{
-        user_id: account,
-        package_id: packageId,
-        level: 1
-      }]).select().single();
-      if (referralError) throw referralError;
-
-      // Then send the transaction
-      const provider = new ethers.BrowserProvider(window.ethereum);
-      const signer = await provider.getSigner();
-      const transaction = {
-        to: RECIPIENT_ADDRESS,
-        value: ethers.parseEther(amount.toString())
-      };
-      const tx = await signer.sendTransaction(transaction);
-      toast({
-        title: "Transaction Sent",
-        description: "Please wait for confirmation"
-      });
-      await tx.wait();
-
-      // Update balance after transaction
-      const newBalance = await provider.getBalance(account);
-      setBalance(ethers.formatEther(newBalance));
-      setReferralCode(referralData.referral_code);
-      toast({
-        title: "Package Activated",
-        description: `Successfully activated package for ${amount} opBNB`
-      });
-    } catch (error: any) {
-      toast({
-        title: "Transaction Failed",
-        description: error.message,
-        variant: "destructive"
-      });
-    } finally {
-      setTransacting(false);
-    }
-  };
-
-  const [referralDetails, setReferralDetails] = useState<any | null>(null);
-
-  const fetchReferralDetails = async () => {
-    if (!account) return;
-    try {
-      const { data, error } = await supabase
-        .from('referrals')
-        .select('*')
-        .eq('user_id', account)
-        .single();
-      
-      if (error) throw error;
-      setReferralDetails(data);
-    } catch (error: any) {
-      console.error('Error fetching referral details:', error);
-    }
-  };
-
-  useEffect(() => {
-    if (account) {
-      fetchUserBonuses();
-      fetchReferralTree();
-      fetchReferralDetails();
-    }
-  }, [account]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 text-white p-4 relative overflow-hidden">
@@ -338,10 +329,10 @@ const Terminal = () => {
                       recentBonus={userBonuses.recent_bonus}
                       bnbPrice={bnbPrice}
                       isLoading={bonusesLoading}
-                      uniqueId={referralDetails?.id}
+                      uniqueId={referralDetails?.unique_id}
                       referralCode={referralDetails?.referral_code}
                       packageLevel={referralDetails?.level}
-                      activationDate={referralDetails?.created_at}
+                      activationDate={referralDetails?.activation_date}
                       referredBy={referralDetails?.referrer_id}
                     />
                   )}
