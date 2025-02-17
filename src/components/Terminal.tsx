@@ -243,6 +243,32 @@ const Terminal = () => {
     }
   };
 
+  const [referralDetails, setReferralDetails] = useState<any | null>(null);
+
+  const fetchReferralDetails = async () => {
+    if (!account) return;
+    try {
+      const { data, error } = await supabase
+        .from('referrals')
+        .select('*')
+        .eq('user_id', account)
+        .single();
+      
+      if (error) throw error;
+      setReferralDetails(data);
+    } catch (error: any) {
+      console.error('Error fetching referral details:', error);
+    }
+  };
+
+  useEffect(() => {
+    if (account) {
+      fetchUserBonuses();
+      fetchReferralTree();
+      fetchReferralDetails();
+    }
+  }, [account]);
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 text-white p-4 relative overflow-hidden">
       <div className="absolute inset-0 overflow-hidden">
@@ -312,6 +338,11 @@ const Terminal = () => {
                       recentBonus={userBonuses.recent_bonus}
                       bnbPrice={bnbPrice}
                       isLoading={bonusesLoading}
+                      uniqueId={referralDetails?.id}
+                      referralCode={referralDetails?.referral_code}
+                      packageLevel={referralDetails?.level}
+                      activationDate={referralDetails?.created_at}
+                      referredBy={referralDetails?.referrer_id}
                     />
                   )}
                 </div>

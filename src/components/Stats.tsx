@@ -2,7 +2,8 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { DollarSign, Users, Trophy, Star, Gift, TrendingUp } from 'lucide-react';
+import { DollarSign, Users, Trophy, Star, Gift, TrendingUp, User, Clock, Package } from 'lucide-react';
+import { format } from 'date-fns';
 
 interface StatsProps {
   directReferrals: number;
@@ -16,6 +17,11 @@ interface StatsProps {
   recentBonus: number;
   bnbPrice: number;
   isLoading: boolean;
+  uniqueId?: string;
+  referralCode?: string;
+  packageLevel?: number;
+  activationDate?: string;
+  referredBy?: string;
 }
 
 const StatCard: React.FC<{
@@ -50,11 +56,16 @@ const Stats: React.FC<StatsProps> = ({
   recentBonus,
   bnbPrice,
   isLoading,
+  uniqueId,
+  referralCode,
+  packageLevel,
+  activationDate,
+  referredBy,
 }) => {
   if (isLoading) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {[...Array(6)].map((_, i) => (
+        {[...Array(9)].map((_, i) => (
           <Card key={i} className="bg-white/10 backdrop-blur-xl border border-white/20">
             <CardHeader className="pb-2">
               <Skeleton className="h-4 w-24 bg-white/20" />
@@ -79,6 +90,32 @@ const Stats: React.FC<StatsProps> = ({
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
       <StatCard
+        title="Unique ID"
+        value={uniqueId || 'Not Available'}
+        icon={<User className="h-4 w-4 text-white/70" />}
+      />
+      <StatCard
+        title="Referral Code"
+        value={referralCode || 'Not Available'}
+        icon={<Users className="h-4 w-4 text-white/70" />}
+      />
+      <StatCard
+        title="Package Level"
+        value={packageLevel ? `Level ${packageLevel}` : 'Not Activated'}
+        icon={<Package className="h-4 w-4 text-white/70" />}
+      />
+      <StatCard
+        title="Activation Date"
+        value={activationDate ? format(new Date(activationDate), 'PPP') : 'Not Activated'}
+        icon={<Clock className="h-4 w-4 text-white/70" />}
+        subValue={activationDate ? format(new Date(activationDate), 'pp') : undefined}
+      />
+      <StatCard
+        title="Referred By"
+        value={referredBy || 'Not Referred'}
+        icon={<User className="h-4 w-4 text-white/70" />}
+      />
+      <StatCard
         title="Direct Referrals"
         value={directReferrals.toString()}
         icon={<Users className="h-4 w-4 text-white/70" />}
@@ -101,18 +138,6 @@ const Stats: React.FC<StatsProps> = ({
         value={formatBNB(upgradeBonus)}
         icon={<TrendingUp className="h-4 w-4 text-white/70" />}
         subValue={formatUSD(upgradeBonus)}
-      />
-      <StatCard
-        title="Level Up Bonus"
-        value={formatBNB(levelUpBonus)}
-        icon={<Trophy className="h-4 w-4 text-white/70" />}
-        subValue={formatUSD(levelUpBonus)}
-      />
-      <StatCard
-        title="Royalty Bonus"
-        value={formatBNB(royaltyBonus)}
-        icon={<Star className="h-4 w-4 text-white/70" />}
-        subValue={formatUSD(royaltyBonus)}
       />
     </div>
   );

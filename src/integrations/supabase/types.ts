@@ -53,6 +53,7 @@ export type Database = {
       }
       referrals: {
         Row: {
+          activation_date: string | null
           community_size: number | null
           created_at: string | null
           direct_bonus: number | null
@@ -66,10 +67,12 @@ export type Database = {
           referrer_id: string | null
           rewarded_bonus: number | null
           royalty_bonus: number | null
+          unique_id: string | null
           upgrade_bonus: number | null
           user_id: string | null
         }
         Insert: {
+          activation_date?: string | null
           community_size?: number | null
           created_at?: string | null
           direct_bonus?: number | null
@@ -83,10 +86,12 @@ export type Database = {
           referrer_id?: string | null
           rewarded_bonus?: number | null
           royalty_bonus?: number | null
+          unique_id?: string | null
           upgrade_bonus?: number | null
           user_id?: string | null
         }
         Update: {
+          activation_date?: string | null
           community_size?: number | null
           created_at?: string | null
           direct_bonus?: number | null
@@ -100,6 +105,7 @@ export type Database = {
           referrer_id?: string | null
           rewarded_bonus?: number | null
           royalty_bonus?: number | null
+          unique_id?: string | null
           upgrade_bonus?: number | null
           user_id?: string | null
         }
@@ -133,6 +139,10 @@ export type Database = {
     }
     Functions: {
       generate_referral_code: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
+      generate_unique_id: {
         Args: Record<PropertyKey, never>
         Returns: string
       }
