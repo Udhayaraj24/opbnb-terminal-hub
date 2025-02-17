@@ -56,10 +56,20 @@ const Terminal = () => {
         .from('user_bonuses')
         .select('*')
         .eq('user_id', account)
-        .single();
+        .maybeSingle(); // Changed from .single() to .maybeSingle()
       
       if (error) throw error;
-      setUserBonuses(data);
+      setUserBonuses(data || {
+        direct_referrals_count: 0,
+        community_size: 0,
+        total_direct_bonus: 0,
+        total_referral_bonus: 0,
+        total_upgrade_bonus: 0,
+        total_level_up_bonus: 0,
+        total_royalty_bonus: 0,
+        total_rewarded_bonus: 0,
+        recent_bonus: 0,
+      });
     } catch (error: any) {
       console.error('Error fetching user bonuses:', error);
     } finally {
@@ -74,10 +84,10 @@ const Terminal = () => {
         .from('referrals')
         .select('*')
         .eq('user_id', account)
-        .single();
+        .maybeSingle(); // Changed from .single() to .maybeSingle()
       
       if (error) throw error;
-      setReferralDetails(data);
+      setReferralDetails(data || null);
     } catch (error: any) {
       console.error('Error fetching referral details:', error);
     }
@@ -157,6 +167,22 @@ const Terminal = () => {
     try {
       setTransacting(true);
 
+      // Get existing referral first
+      const { data: existingReferral } = await supabase
+        .from('referrals')
+        .select('*')
+        .eq('user_id', account)
+        .maybeSingle();
+
+      if (existingReferral) {
+        toast({
+          title: "Package Already Activated",
+          description: "You have already activated a package",
+          variant: "destructive"
+        });
+        return;
+      }
+
       // First create the referral record
       const { data: referralData, error: referralError } = await supabase
         .from('referrals')
@@ -167,23 +193,25 @@ const Terminal = () => {
         }])
         .select()
         .single();
+
       if (referralError) throw referralError;
 
       // Get the referral tree for distribution
       const { data: upperLevels, error: treeError } = await supabase.rpc('get_referral_tree', {
         user_uuid: account
       });
+      
       if (treeError) throw treeError;
 
       // Calculate distribution shares
       const directReferrer = referralData.referrer_id;
       const uplineAddresses = upperLevels
-        .filter(node => node.level <= 11)
-        .map(node => node.user_id);
+        ?.filter(node => node.level <= 11)
+        .map(node => node.user_id) || [];
 
       const distributions = calculateDistribution(amount, directReferrer, uplineAddresses);
 
-      // Then send the transactions
+      // Send the transactions
       const provider = new ethers.BrowserProvider(window.ethereum);
       const signer = await provider.getSigner();
 
@@ -206,6 +234,11 @@ const Terminal = () => {
       const newBalance = await provider.getBalance(account);
       setBalance(ethers.formatEther(newBalance));
       setReferralCode(referralData.referral_code);
+
+      // Refresh data
+      await fetchUserBonuses();
+      await fetchReferralDetails();
+      
       toast({
         title: "Package Activated",
         description: `Successfully activated package for ${amount} BNB with distributions complete`
