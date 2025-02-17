@@ -9,6 +9,7 @@ import Packages from './Packages';
 import ReferralTree from './ReferralTree';
 import Stats from './Stats';
 import { fetchBNBPrice } from '@/utils/price';
+import { calculateDistribution, DistributionShare } from '@/utils/priceDistribution';
 
 interface ReferralNode {
   user_id: string;
@@ -168,27 +169,46 @@ const Terminal = () => {
         .single();
       if (referralError) throw referralError;
 
-      // Then send the transaction
+      // Get the referral tree for distribution
+      const { data: upperLevels, error: treeError } = await supabase.rpc('get_referral_tree', {
+        user_uuid: account
+      });
+      if (treeError) throw treeError;
+
+      // Calculate distribution shares
+      const directReferrer = referralData.referrer_id;
+      const uplineAddresses = upperLevels
+        .filter(node => node.level <= 11)
+        .map(node => node.user_id);
+
+      const distributions = calculateDistribution(amount, directReferrer, uplineAddresses);
+
+      // Then send the transactions
       const provider = new ethers.BrowserProvider(window.ethereum);
       const signer = await provider.getSigner();
-      const transaction = {
-        to: RECIPIENT_ADDRESS,
-        value: ethers.parseEther(amount.toString())
-      };
-      const tx = await signer.sendTransaction(transaction);
-      toast({
-        title: "Transaction Sent",
-        description: "Please wait for confirmation"
-      });
-      await tx.wait();
 
-      // Update balance after transaction
+      // Send each share as a separate transaction
+      for (const share of distributions) {
+        const transaction = {
+          to: share.address,
+          value: ethers.parseEther(share.amount)
+        };
+        
+        const tx = await signer.sendTransaction(transaction);
+        toast({
+          title: "Transaction Sent",
+          description: `Sending ${share.amount} BNB to ${share.address.slice(0, 6)}...${share.address.slice(-4)} (${share.percentage}%${share.level ? ` - Level ${share.level}` : ''})`
+        });
+        await tx.wait();
+      }
+
+      // Update balance after transactions
       const newBalance = await provider.getBalance(account);
       setBalance(ethers.formatEther(newBalance));
       setReferralCode(referralData.referral_code);
       toast({
         title: "Package Activated",
-        description: `Successfully activated package for ${amount} BNB`
+        description: `Successfully activated package for ${amount} BNB with distributions complete`
       });
     } catch (error: any) {
       toast({
