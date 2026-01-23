@@ -63,13 +63,13 @@ const Terminal = () => {
     try {
       setBonusesLoading(true);
       const { data, error } = await supabase
-        .from('user_bonuses')
+        .from('user_bonuses' as any)
         .select('*')
         .eq('user_id', account)
         .maybeSingle(); // Changed from .single() to .maybeSingle()
       
       if (error) throw error;
-      setUserBonuses(data || {
+      setUserBonuses((data as unknown as UserBonuses) || {
         direct_referrals_count: 0,
         community_size: 0,
         total_direct_bonus: 0,
@@ -91,7 +91,7 @@ const Terminal = () => {
     if (!account) return;
     try {
       const { data, error } = await supabase
-        .from('referrals')
+        .from('referrals' as any)
         .select('*')
         .eq('user_id', account)
         .maybeSingle(); // Changed from .single() to .maybeSingle()
@@ -117,7 +117,7 @@ const Terminal = () => {
     if (!account) return;
     try {
       setTreeLoading(true);
-      const { data, error } = await supabase.rpc('get_referral_tree', {
+      const { data, error } = await supabase.rpc('get_referral_tree' as any, {
         user_uuid: account
       });
       if (error) throw error;
@@ -137,12 +137,12 @@ const Terminal = () => {
     const getReferralCode = async () => {
       if (!account) return;
       const { data, error } = await supabase
-        .from('referrals')
+        .from('referrals' as any)
         .select('referral_code')
         .eq('user_id', account)
         .maybeSingle();
       if (data) {
-        setReferralCode(data.referral_code);
+        setReferralCode((data as any).referral_code);
       }
     };
     getReferralCode();
@@ -191,7 +191,7 @@ const Terminal = () => {
 
       // Get existing referral first
       const { data: existingReferral } = await supabase
-        .from('referrals')
+        .from('referrals' as any)
         .select('*')
         .eq('user_id', account)
         .maybeSingle();
@@ -207,7 +207,7 @@ const Terminal = () => {
 
       // First create the referral record
       const { data: referralData, error: referralError } = await supabase
-        .from('referrals')
+        .from('referrals' as any)
         .insert([{
           user_id: account,
           package_id: packageId,
@@ -217,19 +217,19 @@ const Terminal = () => {
         .single();
 
       if (referralError) throw referralError;
+      if (!referralData) throw new Error('Failed to create referral');
 
       // Get the referral tree for distribution
-      const { data: upperLevels, error: treeError } = await supabase.rpc('get_referral_tree', {
+      const { data: upperLevels, error: treeError } = await supabase.rpc('get_referral_tree' as any, {
         user_uuid: account
       });
       
       if (treeError) throw treeError;
 
-      // Calculate distribution shares
-      const directReferrer = referralData.referrer_id;
-      const uplineAddresses = upperLevels
-        ?.filter(node => node.level <= 11)
-        .map(node => node.user_id) || [];
+      const directReferrer = (referralData as any).referrer_id;
+      const uplineAddresses = (upperLevels as any[] || [])
+        .filter((node: any) => node.level <= 11)
+        .map((node: any) => node.user_id);
 
       const distributions = calculateDistribution(amount, directReferrer, uplineAddresses);
 

@@ -18,11 +18,11 @@ const Packages: React.FC<PackagesProps> = ({ onSelect, isLoading }) => {
     queryKey: ['packages'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('packages')
+        .from('packages' as any)
         .select('*')
         .order('amount');
       if (error) throw error;
-      return data as Package[];
+      return data as unknown as Package[];
     },
   });
 
