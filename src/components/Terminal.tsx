@@ -106,15 +106,15 @@ const Terminal = () => {
     }
   };
 
-  // Parse referral code from URL and find the referrer's address
+  // Parse referral ID from URL and find the referrer's address
   useEffect(() => {
-    const refCode = searchParams.get('ref');
-    if (refCode) {
+    const refId = searchParams.get('ref');
+    if (refId) {
       const lookupReferrer = async () => {
         const { data, error } = await supabase
           .from('referrals' as any)
           .select('user_id')
-          .eq('referral_code', refCode)
+          .eq('unique_id', refId)
           .maybeSingle();
         
         if (data && !error) {
@@ -157,18 +157,18 @@ const Terminal = () => {
   };
 
   useEffect(() => {
-    const getReferralCode = async () => {
+    const getReferralId = async () => {
       if (!account) return;
       const { data, error } = await supabase
         .from('referrals' as any)
-        .select('referral_code')
+        .select('unique_id')
         .eq('user_id', account)
         .maybeSingle();
       if (data) {
-        setReferralCode((data as any).referral_code);
+        setReferralCode((data as any).unique_id);
       }
     };
-    getReferralCode();
+    getReferralId();
     fetchReferralTree();
     fetchReferralDetails();
     fetchUserBonuses();
