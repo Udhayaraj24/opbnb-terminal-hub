@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { ethers } from 'ethers';
 import { useToast } from '@/components/ui/use-toast';
 import { Button } from '@/components/ui/button';
@@ -32,6 +33,7 @@ interface UserBonuses {
 }
 
 const Terminal = () => {
+  const [searchParams] = useSearchParams();
   const [account, setAccount] = useState<string | null>(null);
   const [balance, setBalance] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -44,6 +46,7 @@ const Terminal = () => {
   const [userBonuses, setUserBonuses] = useState<UserBonuses | null>(null);
   const [bonusesLoading, setBonusesLoading] = useState(false);
   const [referralDetails, setReferralDetails] = useState<any | null>(null);
+  const [urlReferrerAddress, setUrlReferrerAddress] = useState<string | null>(null);
   const { toast } = useToast();
 
   const RECIPIENT_ADDRESS = "0xE484201328c61Fbc8aCc316B9Ea4b2dC3A4EDEA9";
@@ -102,6 +105,26 @@ const Terminal = () => {
       console.error('Error fetching referral details:', error);
     }
   };
+
+  // Parse referral code from URL and find the referrer's address
+  useEffect(() => {
+    const refCode = searchParams.get('ref');
+    if (refCode) {
+      const lookupReferrer = async () => {
+        const { data, error } = await supabase
+          .from('referrals' as any)
+          .select('user_id')
+          .eq('referral_code', refCode)
+          .maybeSingle();
+        
+        if (data && !error) {
+          setUrlReferrerAddress((data as any).user_id);
+          console.log('Found referrer from URL:', (data as any).user_id);
+        }
+      };
+      lookupReferrer();
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     const updateBNBPrice = async () => {
@@ -205,14 +228,21 @@ const Terminal = () => {
         return;
       }
 
-      // First create the referral record
+      // First create the referral record with referrer from URL if available
+      const insertData: any = {
+        user_id: account,
+        package_id: packageId,
+        level: 1
+      };
+      
+      // Add referrer if we have one from URL
+      if (urlReferrerAddress && urlReferrerAddress !== account) {
+        insertData.referrer_id = urlReferrerAddress;
+      }
+
       const { data: referralData, error: referralError } = await supabase
         .from('referrals' as any)
-        .insert([{
-          user_id: account,
-          package_id: packageId,
-          level: 1
-        }])
+        .insert([insertData])
         .select()
         .single();
 
