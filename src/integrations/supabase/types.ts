@@ -14,13 +14,134 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      packages: {
+        Row: {
+          amount: number
+          created_at: string
+          id: number
+          name: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          id?: number
+          name: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          id?: number
+          name?: string
+        }
+        Relationships: []
+      }
+      referrals: {
+        Row: {
+          activation_date: string
+          created_at: string
+          id: string
+          level: number
+          package_id: number | null
+          referral_code: string
+          referrer_id: string | null
+          unique_id: string
+          user_id: string
+        }
+        Insert: {
+          activation_date?: string
+          created_at?: string
+          id?: string
+          level?: number
+          package_id?: number | null
+          referral_code?: string
+          referrer_id?: string | null
+          unique_id?: string
+          user_id: string
+        }
+        Update: {
+          activation_date?: string
+          created_at?: string
+          id?: string
+          level?: number
+          package_id?: number | null
+          referral_code?: string
+          referrer_id?: string | null
+          unique_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "referrals_package_id_fkey"
+            columns: ["package_id"]
+            isOneToOne: false
+            referencedRelation: "packages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_bonuses: {
+        Row: {
+          community_size: number
+          created_at: string
+          direct_referrals_count: number
+          id: string
+          recent_bonus: number
+          total_direct_bonus: number
+          total_level_up_bonus: number
+          total_referral_bonus: number
+          total_rewarded_bonus: number
+          total_royalty_bonus: number
+          total_upgrade_bonus: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          community_size?: number
+          created_at?: string
+          direct_referrals_count?: number
+          id?: string
+          recent_bonus?: number
+          total_direct_bonus?: number
+          total_level_up_bonus?: number
+          total_referral_bonus?: number
+          total_rewarded_bonus?: number
+          total_royalty_bonus?: number
+          total_upgrade_bonus?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          community_size?: number
+          created_at?: string
+          direct_referrals_count?: number
+          id?: string
+          recent_bonus?: number
+          total_direct_bonus?: number
+          total_level_up_bonus?: number
+          total_referral_bonus?: number
+          total_rewarded_bonus?: number
+          total_royalty_bonus?: number
+          total_upgrade_bonus?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_referral_tree: {
+        Args: { user_uuid: string }
+        Returns: {
+          level: number
+          package_id: number
+          referral_code: string
+          referrer_id: string
+          user_id: string
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never
